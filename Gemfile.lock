@@ -1,0 +1,34 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    addressable (2.3.5)
+    coderay (1.0.9)
+    faraday (0.8.8)
+      multipart-post (~> 1.2.0)
+    method_source (0.8.2)
+    multi_json (1.8.0)
+    multipart-post (1.2.0)
+    octokit (2.3.1)
+      sawyer (~> 0.5.1)
+    pry (0.9.12.2)
+      coderay (~> 1.0.5)
+      method_source (~> 0.8)
+      slop (~> 3.4)
+    pry-rails (0.3.2)
+      pry (>= 0.9.10)
+    sawyer (0.5.1)
+      addressable (~> 2.3.5)
+      faraday (~> 0.8, < 0.10)
+    simplecov (0.7.1)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.7.1)
+    simplecov-html (0.7.1)
+    slop (3.4.6)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  octokit (~> 2.0)
+  pry-rails
+  simplecov
