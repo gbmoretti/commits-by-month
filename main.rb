@@ -1,67 +1,44 @@
-require 'octokit'
-require 'pry'
-require 'yaml'
+require 'json'
+require 'httparty'
 
-class GitHubAuth
-  # Change NOTE, SCOPES and CREDENTIALS to match your app's needs.
-  NOTE = "commits_monthly"
-  SCOPES = ["user", "repo", "repo:status"]
-  CREDENTIALS = File.join("#{ENV['HOME']}", ".config", "sample_app.yml")
- 
-  def self.client
-    new.client
-  end
- 
-  def client
-    @client ||= lambda do
-      unless File.exist?(CREDENTIALS)
-        authenticate
-      end
-      Octokit::Client.new(YAML.load_file(CREDENTIALS))
-    end.call
-  end
- 
-  private
-  def authenticate
-    login = password = token = ""
-    login = `git config github.user`.chomp
-    login = ask_login if login.empty?
-    password = ask_password
-    auth_client = Octokit::Client.new(:login => login, :password => password)
-    auth = auth_client.authorizations.detect { |a| a.note == NOTE }
-    unless auth
-      auth = auth_client.create_authorization(:scopes => SCOPES, :note => NOTE)
-    end
-    File.open(CREDENTIALS, 'w') do |f|      
-      f.puts({ :login => login, :oauth_token => auth.token }.to_yaml)
-    end
-  end
- 
-  def ask_login
-    p "Enter your GitHub username"
-    gets.chomp
-  end
- 
-  # No-echo password input, stolen from Defunkt's `hub`
-  # Won't work in Windows
-  def ask_password
-    p "Enter your GitHub password (this will NOT be stored)"
-    tty_state = `stty -g`
-    system 'stty raw -echo -icanon isig' if $?.success?
-    pass = ''
-    while char = $stdin.getbyte and not (char == 13 or char == 10)
-      if char == 127 or char == 8
-        pass[-1,1] = '' unless pass.empty?
-      else
-        pass << char.chr
-      end
-    end
-    pass
-  ensure
-    system "stty #{tty_state}" unless tty_state.empty?
+def request(url,method=Net::HTTP::Get)
+  request = HTTParty::Request.new(method,url,basic_auth: {username: 'gbmoretti', password: '4215891'})
+  response = request.perform
+  if response.code != 200
+    puts "#{response.code}: #{response.message} (#{url})"
+    return nil
+  else
+    response.body
   end
 end
 
-client = GitHubAuth.client
+def parse(string)
+  return [] if string.nil?
+  begin
+    JSON::parse(string)
+  rescue => e
+     puts "Algo deu errado :("
+     puts string
+     raise Exception
+  end
+end
 
-client.repositories('innvent').each { |x| puts x.full_name }
+orgs = %w(elogroup innvent)
+author = 'gbmoretti'
+
+orgs.each do |org|
+  #repositories = exec("curl -s -u gbmoretti:4215891 ")
+  repositories = request("https://api.github.com/orgs/#{org}/repos")
+  repositories = parse(repositories)
+
+
+  repositories.each do |r|
+    full_name =  r['full_name']
+    #cmd = "curl -s -u gbmoretti:4215891 https://api.github.com/repos/#{r['full_name']}/commits?author=#{author}"
+    #commits = exec(cmd)
+    commits = request("https://api.github.com/repos/#{r['full_name']}/commits?author=#{author}")
+
+    commits = parse(commits)
+    puts full_name + ': ' + commits.count.to_s if commits.count > 0
+  end
+end
