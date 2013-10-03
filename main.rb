@@ -86,10 +86,37 @@ class Organization
 
 end
 
-client = Client.new('gbmoretti','4215891')
+def ask_login
+  p "Enter your GitHub username"
+  gets.chomp
+end
+
+# No-echo password input, stolen from Defunkt's `hub`
+# Won't work in Windows
+def ask_password
+  p "Enter your GitHub password (this will NOT be stored)"
+  tty_state = `stty -g`
+  system 'stty raw -echo -icanon isig' if $?.success?
+  pass = ''
+  while char = $stdin.getbyte and not (char == 13 or char == 10)
+    if char == 127 or char == 8
+      pass[-1,1] = '' unless pass.empty?
+    else
+      pass << char.chr
+    end
+  end
+  pass
+ensure
+  system "stty #{tty_state}" unless tty_state.empty?
+end
+
+login = ask_login
+pass = ask_password
+
+client = Client.new(login,pass)
 orgs = [Organization.new('elogroup',client), Organization.new('innvent',client)]
 
-author = 'gbmoretti'
+author = login
 
 
 orgs.each do |org|
