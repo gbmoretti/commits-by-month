@@ -1,90 +1,11 @@
 require 'json'
 require 'httparty'
 
-class Client
-  class BadResponseError < StandardError; end
-  class InvalidBodyError < StandardError; end
 
-  def initialize(username,password)
-    @username = username
-    @password = password
-    @method = Net::HTTP::Get
-  end
-
-  def request(url)
-    begin
-      perform_request(url)
-      parse_response
-    rescue BadResponseError => e
-      puts '!! ' + e.message
-      return []
-    rescue InvalidBodyError => e
-      puts '!! ' + e.message
-      return []
-    end
-  end
-
-  private
-  def perform_request(url)
-    @request = HTTParty::Request.new(@method,url,basic_auth: {username: @username, password: @password})
-    @response = @request.perform
-    raise BadResponseError.new("#{@response.code}: #{@response.message} (#{url})") if @response.code != 200
-  end
-
-  def parse_response
-    begin
-      JSON::parse(@response.body)
-    rescue => e
-       raise InvalidBodyError.new(@response.body)
-    end
-  end
-
-end
-
-class Repository
-
-  attr_reader :name, :commits
-
-  def initialize(name,client)
-    @name = name
-    @client = client
-  end
-
-  def commits_from_author(author)
-    @commits ||= get_commits(author)
-  end
-
-  private
-  def get_commits(author)
-    @client.request("https://api.github.com/repos/#{@name}/commits?author=#{author}")
-  end
-
-end
-
-class Organization
-
-  attr_reader :name, :repositories
-
-  def initialize(name,client)
-    @name = name
-    @client = client
-  end
-
-  def repositories
-    @repositories ||= get_repos
-  end
-
-  private
-  def get_repos
-    repositories = []
-    response = @client.request("https://api.github.com/orgs/#{@name}/repos")
-    response.each do |r|
-      repositories << Repository.new(r['full_name'],@client)
-    end
-    repositories
-  end
-
-end
+require_relative 'lib/client'
+require_relative 'lib/organization'
+require_relative 'lib/repository'
+require_relative 'lib/commit'
 
 def ask_login
   p "Enter your GitHub username"
@@ -114,14 +35,36 @@ login = ask_login
 pass = ask_password
 
 client = Client.new(login,pass)
-orgs = [Organization.new('elogroup',client), Organization.new('innvent',client)]
+
+orgs = [Organization.new('innvent',client), Organization.new('elogroup',client)]
 
 author = login
+aggregated_commits = []
 
-
+puts 'By repository total:'
 orgs.each do |org|
    org.repositories.each do |r|
     commits = r.commits_from_author(author)
     puts r.name + ': ' + commits.count.to_s if commits.count > 0
+    aggregated_commits += commits    
   end
+end
+
+aggregated_commits.sort!
+commits_by_date = {}
+puts 'By date:'
+aggregated_commits.each do |ac|
+  date_string = ac.date.strftime("%d/%m/%Y")
+  commits_by_date[date_string] = [] if commits_by_date[date_string].nil?
+  commits_by_date[date_string] << ac
+end
+
+commits_by_date.each_pair do |date,commits|
+  repos = []
+  commits.each do |commit|
+    repos << commit.repository
+  end
+  repos.uniq!
+  
+  puts date + "\t" + commits.count.to_s + "\t(" + (repos.map { |x| x.name } * ' ') + ')'
 end
