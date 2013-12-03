@@ -29,7 +29,9 @@ class Client
 
   private
   def perform_request(url)
-    request = HTTParty::Request.new(@method,url,basic_auth: {username: @username, password: @password})
+    request = HTTParty::Request.new(@method,url,
+      basic_auth: {username: @username, password: @password},
+      headers: {"User-Agent" => "monthly_commits"})
     response = request.perform
     raise BadResponseError.new("#{response.code}: #{response.message} (#{url})") if response.code != 200
     return response
