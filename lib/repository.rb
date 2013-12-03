@@ -2,13 +2,19 @@ class Repository
 
   attr_reader :name, :commits
 
-  def initialize(name,client)
+  def initialize(name,client,author)
     @name = name
     @client = client
+    @author = author
   end
 
-  def commits_from_author(author)
-    @commits ||= get_commits(author)
+  def commits
+    @commits ||= get_commits(@author)
+  end
+
+  def commits_by_month(month)
+    @commits ||= get_commits(@author)
+    @commits.keep_if { |c| c.date.month == month }
   end
 
   private

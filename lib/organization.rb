@@ -7,16 +7,16 @@ class Organization
     @client = client
   end
 
-  def repositories
-    @repositories ||= get_repos
+  def repositories(author)
+    @repositories ||= get_repos(author)
   end
 
   private
-  def get_repos
+  def get_repos(author)
     repositories = []
     response = @client.request("https://api.github.com/orgs/#{@name}/repos")
     response.each do |r|
-      repositories << Repository.new(r['full_name'],@client)
+      repositories << Repository.new(r['full_name'],@client,author)
     end
     repositories
   end

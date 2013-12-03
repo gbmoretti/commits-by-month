@@ -23,4 +23,9 @@ class Interface
     system "stty #{tty_state}" unless tty_state.empty?
   end
 
+  def self.ask(msg)
+    p msg
+    gets.chomp
+  end
+
 end
