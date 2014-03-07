@@ -16,7 +16,8 @@ month = month == 0 ? nil : month
 
 client = Client.new(login,pass)
 
-orgs = [Organization.new('innvent',client), Organization.new('elogroup',client)]
+orgs = File.readlines('orgs').map { |l| l.chomp! }
+orgs.map! { |o| Organization.new(o,client) }
 
 author = login
 
