@@ -1,3 +1,4 @@
+#encoding: utf-8
 require 'json'
 require 'httparty'
 
@@ -10,7 +11,8 @@ require_relative 'lib/commit'
 
 login = Interface::ask_login
 pass = Interface::ask_password
-month = Interface::ask("Informe o mes (numero) (em branco para " + Date.today.month.to_s + ")").to_i
+month = Interface::ask("Informe o mes (numero) (em branco para mês atual, 0 para todos os meses)").to_i
+month = month == 0 ? nil : month
 
 client = Client.new(login,pass)
 
@@ -18,16 +20,13 @@ orgs = [Organization.new('innvent',client), Organization.new('elogroup',client)]
 
 author = login
 
-
-
-
 aggregated_commits = []
 commits_this_month = []
 
 puts 'Carregando commits...'
 orgs.each do |org|
    org.repositories(author).each do |r|
-    commits = r.commits_by_month(month)
+    commits = month.nil? ? r.commits : r.commits_by_month(month)
     puts r.name + ': ' + commits.count.to_s if commits.count > 0
     aggregated_commits += commits    
   end
